@@ -1,56 +1,65 @@
 const amqp = require("amqplib");
-const {filesize} = require('filesize');
+const { filesize } = require("filesize");
 
-const {getRandomSizeString, entryForTheData} = require("./../common/common");
-const config = require("./../../config");
+const { getRandomSizeString, entryForTheData } = require("./../common/common");
 
 class SetupRabbitMq {
+  constructor(channel) {
+    this.channel = channel;
+  }
 
-    constructor(channel) {}
+  async init(filename) {
+    try {
+      const connection = await amqp.connect(process.env["MQ_URL"]);
 
-    async init(filename) {
+      this.channel = await connection.createChannel();
+
+      await this.channel.assertQueue("data-queue");
+
+      // Consume previously sent data from RabbitMQ & acknowledge the transaction
+      this.channel.consume("data-queue", (data) => {
         try {
-            const connection = await amqp.connect(config.amqpServerString);
+          console.log("Consumed from data-queue");
 
-            this.channel = await connection.createChannel();
-        
-            await this.channel.assertQueue("data-queue");
+          entryForTheData(
+            `${new Date().toISOString()} - ${filesize(data.content.toString().length)} - ${data.content.toString().split(" ")[1]}\n`,
+            filename,
+          );
 
-            // Consume previously sent data from RabbitMQ & acknowledge the transaction
-            this.channel.consume("data-queue", (data) => {
-                try {
-                    console.log("Consumed from data-queue");
+          console.log("data", filesize(data.content.toString().length));
 
-                    entryForTheData(`${(new Date()).toISOString()} - ${filesize(data.content.toString().length)} - ${(data.content.toString().split(" "))[1]}\n`, filename);
-
-                    console.log("data", filesize(data.content.toString().length));
-
-                    this.channel.ack(data);
-                }
-                catch(err) {
-                    console.log("err in consume", err);
-                }
-            });
+          this.channel.ack(data);
+        } catch (err) {
+          console.log("err in consume", err);
         }
-        catch(err) {
-            console.log("error in init");
-            throw err;
-        }
+      });
+    } catch (err) {
+      console.log("error in init");
+      console.log(err);
     }
+  }
 
-    sendToQueue(counter) {
-        try {
-            // Send data to RabbitMQ queue
-            this.channel.sendToQueue(
-                "data-queue",
-                Buffer.from(getRandomSizeString() + " " + counter)
-            );
-        }
-        catch(err) {
-            console.log("error in sendToQueue");
-            throw err;
-        }
+  static async sendToQueue(counter) {
+    try {
+      const connection = await amqp.connect(process.env["MQ_URL"]);
+
+      console.log("adding send to mq");
+
+      const channel = await connection.createChannel();
+      await channel.assertQueue("data-queue");
+      // Send data to RabbitMQ queue
+      channel.sendToQueue(
+        "data-queue",
+        Buffer.from(getRandomSizeString() + " " + counter),
+        undefined,
+      );
+      await channel.close();
+      await connection.close();
+    } catch (err) {
+      entryForTheData(`error in sendQueue ${err}`, "rabbit-errors.txt");
+      console.log("error in sendToQueue", err);
     }
+  }
 }
 
 module.exports = SetupRabbitMq;

@@ -18,6 +18,14 @@ const init = (clientId = "consumer") => {
 const kafkaMqConsumer = async (filename = "kafkaLogs.txt") => {
   try {
     const client = init("consumer");
+    const admin = client.admin();
+    await admin.createTopics({
+      topics: [
+        {
+          topic: TOPIC_ID,
+        },
+      ],
+    });
     const consumer = client.consumer({
       groupId: GROUP_ID,
     });

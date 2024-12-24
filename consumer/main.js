@@ -6,7 +6,7 @@ const { kafkaMqConsumer } = require("../libs/kafka/kafkaMq");
 setTimeout(async () => {
   if (process.env["MQ"] === "rabbit") {
     const rabbitMqObj = new RabbitMqClass();
-    await rabbitMqObj.init("rabbiMqLogs.txt");
+    await rabbitMqObj.init("rabbitMqLogs.txt");
   } else await kafkaMqConsumer("kafkaLogs.txt");
 });
 

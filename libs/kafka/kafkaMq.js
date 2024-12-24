@@ -52,8 +52,9 @@ const kafkaMqConsumer = async (filename = "kafkaLogs.txt") => {
   }
 };
 
-const kafkaMqProducer = async (id) => {
+const kafkaMqProducer = async (id, data) => {
   try {
+    const start = Date.now();
     const client = init("consumer");
     const producer = client.producer();
     await producer.connect();
@@ -64,13 +65,13 @@ const kafkaMqProducer = async (id) => {
       messages: [
         {
           key: id,
-          value: getRandomSizeString(),
+          value: data,
         },
       ],
     });
-    console.log("producer sent data");
 
     await producer.disconnect();
+    console.log("BENCHMARK FOR PRODUCER [KAFKA]", Date.now() - start);
   } catch (error) {
     console.error("errr", error);
     entryForTheData(`err from producer ${error}`);

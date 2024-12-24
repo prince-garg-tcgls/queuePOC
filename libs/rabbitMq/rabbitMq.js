@@ -1,7 +1,7 @@
 const amqp = require("amqplib");
 const { filesize } = require("filesize");
 
-const { getRandomSizeString, entryForTheData } = require("./../common/common");
+const { entryForTheData } = require("./../common/common");
 
 class SetupRabbitMq {
   constructor(channel) {
@@ -39,8 +39,9 @@ class SetupRabbitMq {
     }
   }
 
-  static async sendToQueue(counter) {
+  static async sendToQueue(counter, data) {
     try {
+      const start = Date.now();
       const connection = await amqp.connect(process.env["MQ_URL"]);
 
       console.log("adding send to mq");
@@ -50,11 +51,12 @@ class SetupRabbitMq {
       // Send data to RabbitMQ queue
       channel.sendToQueue(
         "data-queue",
-        Buffer.from(getRandomSizeString() + " " + counter),
+        Buffer.from(data + " " + counter),
         undefined,
       );
       await channel.close();
       await connection.close();
+      console.log("BENCHMARK FOR PRODUCER [RABBIT]", Date.now() - start);
     } catch (err) {
       entryForTheData(`error in sendQueue ${err}`, "rabbit-errors.txt");
       console.log("error in sendToQueue", err);

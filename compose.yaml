@@ -10,7 +10,8 @@ services:
         host.docker.internal:29092
         host.docker.internal:39092
         host.docker.internal:49092
-
+    volumes:
+      - ./kafkaLogs.txt:/usr/src/app/kafkaLogs.txt
     depends_on:
       - broker-1
       - broker-2
@@ -24,7 +25,8 @@ services:
       NODE_ENV: production
       MQ_URL: amqp://guest:guest@rabbitmq:5672
       MQ: rabbit
-
+    volumes:
+      - ./rabbitMqLogs.txt:/usr/src/app/rabbitMqLogs.txt
     depends_on:
       - rabbitmq
 

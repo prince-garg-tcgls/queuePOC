@@ -14,7 +14,7 @@ class SetupRabbitMq {
 
       this.channel = await connection.createChannel();
 
-      await this.channel.assertQueue("data-queue");
+      await this.channel.assertQueue("data-queue", {durable: true});
 
       // Consume previously sent data from RabbitMQ & acknowledge the transaction
       this.channel.consume("data-queue", (data) => {
@@ -32,7 +32,7 @@ class SetupRabbitMq {
         } catch (err) {
           console.log("err in consume", err);
         }
-      });
+      }, {noAck: false});
     } catch (err) {
       console.log("error in init");
       console.log(err);
